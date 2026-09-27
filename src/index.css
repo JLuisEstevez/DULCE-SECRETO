@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1, h2, h3, h4 {
+    @apply font-display text-marron-oscuro;
+  }
+
+  :focus-visible {
+    outline: 2px solid #E8A5C8;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn-primario {
+    @apply inline-flex items-center justify-center rounded-full bg-marron px-6 py-3 text-sm font-medium text-crema-suave transition-colors hover:bg-marron-oscuro;
+  }
+
+  .btn-secundario {
+    @apply inline-flex items-center justify-center rounded-full border border-marron/20 bg-transparent px-6 py-3 text-sm font-medium text-marron transition-colors hover:border-marron/40;
+  }
+
+  .contenedor {
+    @apply mx-auto w-full max-w-6xl px-6;
+  }
+}
