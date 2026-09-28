@@ -50,7 +50,7 @@ export default function Header() {
 >
   {/* Casilla para el logo PNG sin fondo */}
   <img
-    src="/logo.png"
+    src="/isotipo.png"
     alt="Logo Dulce Secreto"
     className="h-9 w-9 sm:h-10 sm:w-10 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
     onError={(e) => {

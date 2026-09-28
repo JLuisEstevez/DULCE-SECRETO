@@ -12,7 +12,7 @@ export default function Footer() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <img 
-              src="/logo.jpg" 
+              src="/isotipo.jpg" 
               alt="Logo Dulce Secreto" 
               className="h-10 w-10 rounded-full object-cover border border-crema-suave/20 shadow-sm" 
             />

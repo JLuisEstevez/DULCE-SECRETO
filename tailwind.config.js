@@ -10,15 +10,15 @@ export default {
         // Paleta oficial de marca Dulce Secreto
         crema: {
           DEFAULT: '#FFFDD0',
-          suave: '#f6eee0'
+          suave: '#F5EEDE'
         },
         rosa: {
           DEFAULT: '#F8C8DC',
-          intenso: '#e9a5c9'
+          intenso: '#E8A5C8'
         },
         marron: {
           DEFAULT: '#4A2E2B',
-          oscuro: '#3d231d'
+          oscuro: '#54332A'
         }
       },
       fontFamily: {
