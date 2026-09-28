@@ -120,17 +120,19 @@ export default function RegistroCliente() {
               <span>Continuar con Google</span>
             </button>
 
-            {/* Botón Apple con logotipo oficial de la manzana */}
+            {/* Botón Apple con logotipo oficial de la manzana corregido */}
             <button
               type="button"
               onClick={() => alert('Próximamente: Registro con Apple ID')}
               className="flex w-full items-center justify-center gap-3 rounded-full bg-black py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-800 active:scale-[0.99]"
             >
-              <svg className="h-5 w-5 fill-current text-white" viewBox="0 0 170 170" aria-hidden="true">
-                <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.04-7.66-7.74-11.89-14.1-6.19-9.35-11.05-20.08-14.58-32.18-3.53-12.1-5.3-23.75-5.3-34.95 0-14.42 3.65-26.65 10.96-36.68 7.31-10.04 16.59-15.17 27.84-15.39 4.13 0 9.07 1.15 14.82 3.45 5.75 2.3 9.49 3.51 11.22 3.62 1.3.11 5.37-1.2 12.22-3.93 6.85-2.73 12.39-3.95 16.63-3.66 12.61.65 22.84 5.38 30.68 14.2-11.09 6.74-16.53 16.14-16.31 28.2.22 9.57 3.97 17.58 11.25 24.03 7.28 6.45 15.93 10.05 25.95 10.79-2.4 7.4-5.22 14.77-8.47 22.12zM119.22 33.15c0-6.74 2.45-13.15 7.36-19.24 4.91-6.08 10.93-10.27 18.06-12.57.87 2.39 1.3 4.89 1.3 7.5 0 6.63-2.61 13.04-7.83 19.24-5.22 6.2-11.22 10.16-18 11.89-.33-2.17-.89-4.44-.89-6.82z" />
-              </svg>
-              <span>Continuar con Apple</span>
-            </button>
+              <img 
+            src="/apple.png" 
+            alt="Logo Apple" 
+            className="h-5 w-5 object-contain" 
+          />
+          Continuar con Apple
+        </button>
 
             {/* Alternar a Registro Tradicional por Correo */}
             <button

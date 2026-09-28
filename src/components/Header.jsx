@@ -52,7 +52,7 @@ export default function Header() {
   <img
     src="/isotipo.png"
     alt="Logo Dulce Secreto"
-    className="h-9 w-9 sm:h-10 sm:w-10 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
+    className="h-9 w-9 sm:h-10 sm:w-10 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-125"
     onError={(e) => {
       e.currentTarget.style.display = 'none'
     }}
