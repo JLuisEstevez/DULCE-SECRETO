@@ -16,7 +16,7 @@ function EnlaceCuenta({ alHacerClic }) {
       <Link
         to="/cuenta/pedidos"
         onClick={alHacerClic}
-        className="flex items-center gap-2 text-sm text-marron/80 hover:text-marron-oscuro"
+        className="group relative flex items-center gap-2 py-1 text-sm text-marron/80 transition-colors hover:text-marron-oscuro after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-rosa-intenso after:transition-all after:duration-300 hover:after:w-full"
       >
         {cliente.foto_url ? (
           <img src={cliente.foto_url} alt="" className="h-7 w-7 rounded-full object-cover" />
@@ -31,8 +31,17 @@ function EnlaceCuenta({ alHacerClic }) {
   }
 
   return (
-    <Link to="/cuenta/entrar" onClick={alHacerClic} className="text-sm text-marron/80 hover:text-marron-oscuro">
-      Iniciar sesión
+    <Link 
+      to="/cuenta/entrar" 
+      onClick={alHacerClic} 
+      className="group relative flex items-center gap-2 py-1 text-sm text-marron/80 transition-colors hover:text-marron-oscuro after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-rosa-intenso after:transition-all after:duration-300 hover:after:w-full"
+    >
+      <img 
+        src="/perfil.png"
+        alt="Icono de perfil" 
+        className="h-6 w-6 object-contain" 
+      />
+      <span>Iniciar sesión</span>
     </Link>
   )
 }
@@ -44,28 +53,28 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-marron/10 bg-crema-suave/95 backdrop-blur">
       <div className="contenedor flex h-20 items-center justify-between">
         <Link 
-  to="/" 
-  className="group flex items-center gap-3 leading-none" 
-  onClick={() => setMenuAbierto(false)}
->
-  {/* Casilla para el logo PNG sin fondo */}
-  <img
-    src="/isotipo.png"
-    alt="Logo Dulce Secreto"
-    className="h-9 w-9 sm:h-10 sm:w-10 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-125"
-    onError={(e) => {
-      e.currentTarget.style.display = 'none'
-    }}
-  />
+          to="/" 
+          className="group flex items-center gap-3 leading-none" 
+          onClick={() => setMenuAbierto(false)}
+        >
+          {/* Casilla para el logo PNG sin fondo */}
+          <img
+            src="/isotipo.png"
+            alt="Logo Dulce Secreto"
+            className="h-9 w-9 sm:h-10 sm:w-10 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-125"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
 
-  {/* Tu tipografía italiana intacta */}
-  <div className="flex flex-col">
-    <span className="font-display text-2xl italic text-marron-oscuro">
-      Dulce Secreto
-    </span>
-    <span className="mt-1 h-px w-0 bg-rosa-intenso transition-all duration-300 group-hover:w-full" />
-  </div>
-</Link>
+          {/* Tipografía corporativa */}
+          <div className="flex flex-col">
+            <span className="font-display text-2xl italic text-marron-oscuro">
+              Dulce Secreto
+            </span>
+            <span className="mt-1 h-px w-0 bg-rosa-intenso transition-all duration-300 group-hover:w-full" />
+          </div>
+        </Link>
 
         <nav className="hidden items-center gap-10 md:flex">
           {enlaces.map((enlace) => (
@@ -73,45 +82,72 @@ export default function Header() {
               key={enlace.destino}
               to={enlace.destino}
               className={({ isActive }) =>
-                `text-sm text-marron/80 transition-colors hover:text-marron-oscuro ${
-                  isActive ? 'text-marron-oscuro' : ''
-                }`
+                `group relative flex items-center gap-2 py-1 text-sm text-marron/80 transition-colors hover:text-marron-oscuro after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-rosa-intenso after:transition-all after:duration-300 hover:after:w-full`
               }
             >
               {enlace.etiqueta}
             </NavLink>
           ))}
           <EnlaceCuenta />
+
+          {/* Botón de la Bolsa / Carrito */}
+          <Link
+            to="/bolsa"
+            className="p-1 transition-transform duration-200 hover:scale-110"
+            title="Ver bolsa de compras"
+          >
+            <img 
+              src="/Bolsa.png" 
+              alt="Bolsa de compras" 
+              className="h-6 w-6 object-contain" 
+            />
+          </Link>
+
           <Link to="/personalizar" className="btn-primario">
             Personaliza tu torta
           </Link>
         </nav>
 
-        <button
-          type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-marron/15 md:hidden"
-          aria-expanded={menuAbierto}
-          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
-          onClick={() => setMenuAbierto((abierto) => !abierto)}
-        >
-          <span className="relative block h-3.5 w-4">
-            <span
-              className={`absolute left-0 top-0 h-px w-4 bg-marron-oscuro transition-transform ${
-                menuAbierto ? 'translate-y-[7px] rotate-45' : ''
-              }`}
+        {/* Acciones en móvil */}
+        <div className="flex items-center gap-3 md:hidden">
+          <Link
+            to="/bolsa"
+            className="p-1"
+            title="Ver bolsa de compras"
+          >
+            <img 
+              src="/perfil.png" 
+              alt="Bolsa de compras" 
+              className="h-6 w-6 object-contain" 
             />
-            <span
-              className={`absolute left-0 top-1/2 h-px w-4 -translate-y-1/2 bg-marron-oscuro transition-opacity ${
-                menuAbierto ? 'opacity-0' : 'opacity-100'
-              }`}
-            />
-            <span
-              className={`absolute bottom-0 left-0 h-px w-4 bg-marron-oscuro transition-transform ${
-                menuAbierto ? '-translate-y-[7px] -rotate-45' : ''
-              }`}
-            />
-          </span>
-        </button>
+          </Link>
+
+          <button
+            type="button"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-marron/15"
+            aria-expanded={menuAbierto}
+            aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+            onClick={() => setMenuAbierto((abierto) => !abierto)}
+          >
+            <span className="relative block h-3.5 w-4">
+              <span
+                className={`absolute left-0 top-0 h-px w-4 bg-marron-oscuro transition-transform ${
+                  menuAbierto ? 'translate-y-[7px] rotate-45' : ''
+                }`}
+              />
+              <span
+                className={`absolute left-0 top-1/2 h-px w-4 -translate-y-1/2 bg-marron-oscuro transition-opacity ${
+                  menuAbierto ? 'opacity-0' : 'opacity-100'
+                }`}
+              />
+              <span
+                className={`absolute bottom-0 left-0 h-px w-4 bg-marron-oscuro transition-transform ${
+                  menuAbierto ? '-translate-y-[7px] -rotate-45' : ''
+                }`}
+              />
+            </span>
+          </button>
+        </div>
       </div>
 
       {menuAbierto && (

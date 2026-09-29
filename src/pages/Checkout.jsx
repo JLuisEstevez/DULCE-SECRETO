@@ -1,293 +1,219 @@
 import { useState } from 'react'
-import { useLocation, Link } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useClienteAuth } from '../context/ClienteAuthContext.jsx'
 import InformacionPago from '../components/InformacionPago.jsx'
 import CargaComprobante from '../components/CargaComprobante.jsx'
-import { crearPedido } from '../services/api.js'
 import { formatearCOP } from '../utils/formato.js'
-import { useClienteAuth } from '../context/ClienteAuthContext.jsx'
-
-function fechaMinimaEntrega() {
-  const fecha = new Date()
-  fecha.setDate(fecha.getDate() + 2) // 48 horas de anticipación
-  return fecha.toISOString().split('T')[0]
-}
-
-function camposIniciales(cliente) {
-  return {
-    nombre: cliente?.nombre ?? '',
-    telefono: cliente?.telefono ?? '',
-    direccion: '',
-    fechaEntrega: '',
-    notas: ''
-  }
-}
 
 export default function Checkout() {
   const { state } = useLocation()
+  const navigate = useNavigate()
   const { cliente } = useClienteAuth()
-  const producto = state?.producto ?? null
-  const seleccion = state?.seleccion ?? null
-  const resumenProducto = state?.resumen ?? null
 
-  const [campos, setCampos] = useState(() => camposIniciales(cliente))
+  // Detecta si la compra viene de la Bolsa de compras o del Personalizador
+  const vieneDeBolsa = Boolean(state?.desdeBolsa)
+  const productosBolsa = state?.productosBolsa || []
+  
+  // Si viene de la bolsa calcula el total de la bolsa; si no, toma el del personalizador
+  const total = vieneDeBolsa 
+    ? (state?.totalBolsa || 0) 
+    : (state?.configuracion?.total || state?.producto?.precio_base || 0)
+
+  // Resumen del producto para guardar en base de datos
+  const productoResumen = vieneDeBolsa
+    ? productosBolsa.map((i) => `${i.cantidad}x ${i.nombre}`).join(', ')
+    : (state?.configuracion?.resumen || state?.producto?.nombre || 'Pedido personalizado')
+
+  const [nombre, setNombre] = useState(cliente?.nombre || '')
+  const [telefono, setTelefono] = useState(cliente?.telefono || '')
+  const [direccion, setDireccion] = useState(cliente?.direccion || '')
+  const [fechaEntrega, setFechaEntrega] = useState('')
+  const [notas, setNotas] = useState('')
   const [comprobante, setComprobante] = useState(null)
-  const [errorComprobante, setErrorComprobante] = useState(null)
-  const [errores, setErrores] = useState({})
+  const [error, setError] = useState(null)
   const [enviando, setEnviando] = useState(false)
-  const [errorEnvio, setErrorEnvio] = useState(null)
-  const [pedidoConfirmado, setPedidoConfirmado] = useState(null)
 
-  function actualizarCampo(nombreCampo, valor) {
-    setCampos((anterior) => ({ ...anterior, [nombreCampo]: valor }))
+  // Si alguien entra directo a /checkout sin haber agregado nada
+  if (!state && (!productosBolsa || productosBolsa.length === 0)) {
+    return (
+      <section className="contenedor flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
+        <h1 className="font-serif text-2xl text-marron">No tienes productos seleccionados</h1>
+        <p className="mt-2 text-sm text-marron/60">
+          Agrega productos a tu bolsa o personaliza una torta para proceder al pago.
+        </p>
+        <Link to="/catalogo" className="btn-primario mt-6">
+          Ir al Catálogo
+        </Link>
+      </section>
+    )
   }
 
-  function validar() {
-    const nuevosErrores = {}
-    if (!campos.nombre.trim()) nuevosErrores.nombre = 'Escribe tu nombre completo.'
-    if (!/^\d{7,10}$/.test(campos.telefono.replace(/\s/g, ''))) {
-      nuevosErrores.telefono = 'Escribe un número de WhatsApp válido.'
-    }
-    if (!campos.direccion.trim()) nuevosErrores.direccion = 'Indica la dirección o punto de retiro.'
-    if (!campos.fechaEntrega) nuevosErrores.fechaEntrega = 'Elige la fecha de entrega.'
-    if (!comprobante) nuevosErrores.comprobante = 'Adjunta la captura del comprobante de pago.'
+  async function manejarEnvio(e) {
+    e.preventDefault()
+    setError(null)
 
-    setErrores(nuevosErrores)
-    if (!comprobante) setErrorComprobante('Adjunta la captura del comprobante de pago.')
-
-    return Object.keys(nuevosErrores).length === 0
-  }
-
-  async function manejarEnvio(evento) {
-    evento.preventDefault()
-    setErrorEnvio(null)
-    if (!validar() || !producto || !seleccion) return
-
-    const formData = new FormData()
-    formData.append('cliente_nombre', campos.nombre)
-    formData.append('telefono', campos.telefono)
-    formData.append('direccion', campos.direccion)
-    formData.append('fecha_entrega', campos.fechaEntrega)
-    formData.append('notas', campos.notas)
-    formData.append('producto_id', producto.id)
-    formData.append('comprobante', comprobante)
-
-    if (producto.personalizable) {
-      formData.append('porciones_id', seleccion.porcionesId)
-      formData.append('sabor_id', seleccion.saborId)
-      formData.append('relleno_id', seleccion.rellenoId)
-      formData.append('toppings_ids', JSON.stringify(seleccion.toppingsIds ?? []))
-    } else {
-      formData.append('cantidad', seleccion.cantidad)
+    if (!comprobante) {
+      setError('Por favor adjunta el comprobante de pago.')
+      return
     }
 
     setEnviando(true)
+
     try {
-      const pedido = await crearPedido(formData)
-      setPedidoConfirmado(pedido)
-    } catch (error) {
-      setErrorEnvio(error.message)
+      const formData = new FormData()
+      formData.append('cliente_nombre', nombre)
+      formData.append('telefono', telefono)
+      formData.append('direccion', direccion)
+      formData.append('fecha_entrega', fechaEntrega)
+      formData.append('notas', notas)
+      formData.append('producto_resumen', productoResumen)
+      formData.append('total', total)
+      formData.append('comprobante', comprobante)
+
+      if (cliente?.id) {
+        formData.append('cliente_id', cliente.id)
+      }
+
+      const respuesta = await fetch('/api/pedidos', {
+        method: 'POST',
+        body: formData
+      })
+
+      const datos = await respuesta.json()
+
+      if (!respuesta.ok) {
+        throw new Error(datos.error || 'No se pudo registrar el pedido')
+      }
+
+      // Si la compra fue exitosa y venía de la bolsa, vaciamos la bolsa
+      if (vieneDeBolsa) {
+        localStorage.removeItem('ds_carrito')
+        window.dispatchEvent(new Event('ds_carrito_actualizado'))
+      }
+
+      // Alerta de confirmación con el código asignado
+      alert(`¡Pedido realizado con éxito! Código: ${datos.codigo_seguimiento}`)
+      navigate(cliente ? '/cuenta/pedidos' : '/')
+    } catch (err) {
+      setError(err.message || 'Error al procesar el pedido')
     } finally {
       setEnviando(false)
     }
   }
 
-  if (pedidoConfirmado) {
-    return <ResumenConfirmacion pedido={pedidoConfirmado} />
-  }
-
-  if (!producto || !seleccion) {
-    return (
-      <div className="contenedor py-24 text-center">
-        <p className="text-marron/70">
-          No encontramos un producto personalizado. Vuelve al{' '}
-          <Link to="/catalogo" className="underline">catálogo</Link> para elegir uno.
-        </p>
-      </div>
-    )
-  }
-
   return (
-    <section className="contenedor grid gap-10 py-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-      <form onSubmit={manejarEnvio} noValidate className="space-y-10">
-        <div>
-          <Link to="/personalizar" className="text-sm text-marron/60 hover:text-marron-oscuro">
-            ← Volver a personalizar
-          </Link>
-          <h1 className="mt-4 text-3xl">Datos de entrega</h1>
-          {cliente ? (
-            <p className="mt-1 text-sm text-marron/60">
-              Comprando como <strong className="text-marron-oscuro">{cliente.nombre}</strong>. Este pedido
-              quedará guardado en tu historial.
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-marron/60">
-              Comprando como invitado.{' '}
-              <Link to="/cuenta/entrar" className="underline">
-                Inicia sesión
-              </Link>{' '}
-              o{' '}
-              <Link to="/cuenta/crear" className="underline">
-                crea una cuenta
-              </Link>{' '}
-              para que tus próximos pedidos queden guardados en tu historial.
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-5 rounded-2xl border border-marron/10 bg-white/60 p-6">
-          <CampoTexto
-            etiqueta="Nombre completo"
-            valor={campos.nombre}
-            onCambiar={(v) => actualizarCampo('nombre', v)}
-            error={errores.nombre}
-            placeholder="Ej: Laura Gómez"
-          />
-          <CampoTexto
-            etiqueta="Teléfono de WhatsApp"
-            valor={campos.telefono}
-            onCambiar={(v) => actualizarCampo('telefono', v)}
-            error={errores.telefono}
-            placeholder="Ej: 3001234567"
-            tipo="tel"
-          />
-          <CampoTexto
-            etiqueta="Dirección de entrega o retiro en local"
-            valor={campos.direccion}
-            onCambiar={(v) => actualizarCampo('direccion', v)}
-            error={errores.direccion}
-            placeholder="Barrio, calle, número, o 'Retiro en local'"
-          />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <CampoTexto
-              etiqueta="Fecha solicitada de entrega"
-              valor={campos.fechaEntrega}
-              onCambiar={(v) => actualizarCampo('fechaEntrega', v)}
-              error={errores.fechaEntrega}
-              tipo="date"
-              min={fechaMinimaEntrega()}
-            />
-          </div>
-          <CampoTexto
-            etiqueta="Notas especiales de decoración (opcional)"
-            valor={campos.notas}
-            onCambiar={(v) => actualizarCampo('notas', v)}
-            placeholder="Ej: escribir 'Feliz cumpleaños Sofía' en la torta"
-            multilinea
-          />
-        </div>
-
-        <div className="space-y-5">
-          <h2 className="text-xl">Pago por transferencia</h2>
-          <InformacionPago />
-          <CargaComprobante
-            archivo={comprobante}
-            error={errores.comprobante || errorComprobante}
-            onCambiar={(archivo, error) => {
-              setComprobante(archivo)
-              setErrorComprobante(error)
-              if (!error) setErrores((anterior) => ({ ...anterior, comprobante: undefined }))
-            }}
-          />
-        </div>
-
-        {errorEnvio && (
-          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{errorEnvio}</p>
-        )}
-
-        <button type="submit" disabled={enviando} className="btn-primario w-full disabled:opacity-60">
-          {enviando ? 'Enviando pedido…' : 'Confirmar pedido'}
-        </button>
-      </form>
-
-      <aside className="sticky top-28 rounded-2xl border border-marron/10 bg-white/70 p-6">
-        <h2 className="text-lg">Tu pedido</h2>
-        <p className="mt-3 font-body text-base text-marron-oscuro">{resumenProducto?.nombreProducto}</p>
-        <ul className="mt-2 space-y-1 text-sm text-marron/70">
-          {resumenProducto?.lineas.map((linea) => (
-            <li key={linea}>{linea}</li>
-          ))}
-        </ul>
-        <div className="mt-4 flex items-baseline justify-between border-t border-marron/10 pt-4">
-          <span className="text-sm text-marron/60">Total a transferir</span>
-          <span className="text-2xl text-marron-oscuro">{formatearCOP(resumenProducto?.total ?? 0)}</span>
-        </div>
-      </aside>
-    </section>
-  )
-}
-
-function CampoTexto({ etiqueta, valor, onCambiar, error, placeholder, tipo = 'text', min, multilinea }) {
-  const clases = `mt-1.5 w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-marron placeholder:text-marron/40 focus:border-rosa-intenso ${
-    error ? 'border-red-400' : 'border-marron/15'
-  }`
-
-  return (
-    <label className="block text-sm font-semibold text-marron-oscuro">
-      {etiqueta}
-      {multilinea ? (
-        <textarea
-          value={valor}
-          onChange={(evento) => onCambiar(evento.target.value)}
-          placeholder={placeholder}
-          rows={3}
-          className={clases}
-        />
-      ) : (
-        <input
-          type={tipo}
-          value={valor}
-          min={min}
-          onChange={(evento) => onCambiar(evento.target.value)}
-          placeholder={placeholder}
-          className={clases}
-        />
-      )}
-      {error && <span className="mt-1 block text-xs font-normal text-red-700">{error}</span>}
-    </label>
-  )
-}
-
-function ResumenConfirmacion({ pedido }) {
-  return (
-    <section className="contenedor max-w-2xl py-20 text-center">
-      <span className="text-4xl" aria-hidden="true">🎉</span>
-      <h1 className="mt-4 text-3xl">¡Pedido registrado!</h1>
-      <p className="mt-2 text-marron/70">
-        Quedó en estado <strong className="text-marron-oscuro">{pedido.estado_pedido}</strong>. Kelly revisará
-        tu comprobante y te confirmará por WhatsApp.
+    <section className="contenedor py-12">
+      <h1 className="font-serif text-3xl font-bold text-marron">Finalizar Pedido</h1>
+      <p className="mt-1 text-sm text-marron/60">
+        Completa los datos de entrega y realiza la transferencia para confirmar tu pedido.
       </p>
 
-      <div className="mt-8 rounded-2xl border border-marron/15 bg-white/60 p-6 text-left">
-        <p className="text-xs uppercase tracking-wide text-marron/50">Código de seguimiento</p>
-        <p className="mt-1 font-display text-2xl italic text-marron-oscuro">{pedido.codigo_seguimiento}</p>
+      <div className="mt-8 grid grid-cols-1 gap-12 lg:grid-cols-2">
+        {/* Formulario de Entrega */}
+        <form onSubmit={manejarEnvio} className="flex flex-col gap-4">
+          <h2 className="font-serif text-xl font-bold text-marron">Datos de Entrega</h2>
 
-        <dl className="mt-6 space-y-3 text-sm text-marron/75">
-          <div className="flex justify-between gap-4">
-            <dt>Producto</dt>
-            <dd className="text-right">{pedido.producto_resumen}</dd>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-marron/70">
+            Nombre Completo
+            <input
+              type="text"
+              required
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Tu nombre y apellido"
+              className="mt-1.5 w-full rounded-xl border border-marron/20 bg-white px-4 py-2.5 text-sm text-marron focus:border-rosa-intenso focus:outline-none"
+            />
+          </label>
+
+          <label className="block text-xs font-semibold uppercase tracking-wider text-marron/70">
+            Teléfono / WhatsApp
+            <input
+              type="tel"
+              required
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="300 123 4567"
+              className="mt-1.5 w-full rounded-xl border border-marron/20 bg-white px-4 py-2.5 text-sm text-marron focus:border-rosa-intenso focus:outline-none"
+            />
+          </label>
+
+          <label className="block text-xs font-semibold uppercase tracking-wider text-marron/70">
+            Dirección de Entrega
+            <input
+              type="text"
+              required
+              value={direccion}
+              onChange={(e) => setDireccion(e.target.value)}
+              placeholder="Calle, número, barrio o retiro en local"
+              className="mt-1.5 w-full rounded-xl border border-marron/20 bg-white px-4 py-2.5 text-sm text-marron focus:border-rosa-intenso focus:outline-none"
+            />
+          </label>
+
+          <label className="block text-xs font-semibold uppercase tracking-wider text-marron/70">
+            Fecha de Entrega deseada
+            <input
+              type="date"
+              required
+              value={fechaEntrega}
+              onChange={(e) => setFechaEntrega(e.target.value)}
+              className="mt-1.5 w-full rounded-xl border border-marron/20 bg-white px-4 py-2.5 text-sm text-marron focus:border-rosa-intenso focus:outline-none"
+            />
+          </label>
+
+          <label className="block text-xs font-semibold uppercase tracking-wider text-marron/70">
+            Notas o mensaje para la tarjeta (opcional)
+            <textarea
+              rows={2}
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
+              placeholder="Dedicatoria especial, indicaciones de entrega..."
+              className="mt-1.5 w-full rounded-xl border border-marron/20 bg-white px-4 py-2.5 text-sm text-marron focus:border-rosa-intenso focus:outline-none"
+            />
+          </label>
+
+          {/* Subida de Comprobante */}
+          <div className="mt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-marron/70">
+              Adjuntar Comprobante
+            </h3>
+            <div className="mt-2">
+              <CargaComprobante onArchivoSeleccionado={(archivo) => setComprobante(archivo)} />
+            </div>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt>Total</dt>
-            <dd className="text-right">{formatearCOP(pedido.total)}</dd>
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={enviando}
+            className="btn-primario mt-4 w-full py-3 text-center disabled:opacity-50"
+          >
+            {enviando ? 'Enviando Pedido...' : `Confirmar Pedido · ${formatearCOP(total)}`}
+          </button>
+        </form>
+
+        {/* Resumen e Información Bancaria */}
+        <div className="flex flex-col gap-6">
+          <div className="rounded-2xl border border-marron/10 bg-white p-6 shadow-sm">
+            <h2 className="font-serif text-lg font-bold text-marron">Resumen de la Orden</h2>
+            <p className="mt-2 text-sm text-marron/70 font-medium">{productoResumen}</p>
+            <div className="mt-4 flex justify-between border-t border-marron/10 pt-4 text-base font-bold text-marron">
+              <span>Total a Transferir:</span>
+              <span className="text-rosa-intenso">{formatearCOP(total)}</span>
+            </div>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt>Entrega a</dt>
-            <dd className="text-right">{pedido.cliente_nombre}</dd>
+
+          <div>
+            <h3 className="mb-3 font-serif text-lg font-bold text-marron">Cuentas Autorizadas</h3>
+            {/* Aquí se renderiza tu componente oficial de pagos */}
+            <InformacionPago />
           </div>
-          <div className="flex justify-between gap-4">
-            <dt>Dirección</dt>
-            <dd className="text-right">{pedido.direccion}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt>Fecha de entrega</dt>
-            <dd className="text-right">{pedido.fecha_entrega}</dd>
-          </div>
-        </dl>
+        </div>
       </div>
-
-      <Link to="/" className="btn-secundario mt-8 inline-flex">
-        Volver al inicio
-      </Link>
     </section>
   )
 }

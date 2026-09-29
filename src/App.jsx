@@ -16,6 +16,7 @@ import LoginCliente from './pages/LoginCliente.jsx'
 import RegistroCliente from './pages/RegistroCliente.jsx'
 import PerfilCliente from './pages/PerfilCliente.jsx'
 import MisPedidos from './pages/MisPedidos.jsx'
+import Bolsa from './pages/Bolsa.jsx'
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/catalogo" element={<Catalogo />} />
             <Route path="/personalizar" element={<Personalizador />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/bolsa" element={<Bolsa />} />
 
             {/* Cuenta de CLIENTE (quien compra) */}
             <Route path="/cuenta/entrar" element={<LoginCliente />} />

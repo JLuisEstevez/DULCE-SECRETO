@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -8,6 +9,8 @@ export default function Login() {
   const [cargando, setCargando] = useState(false)
 
   const navigate = useNavigate()
+  // Intentamos obtener iniciarSesion del contexto de Staff si existe
+  const auth = useAuth?.()
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -15,28 +18,30 @@ export default function Login() {
     setCargando(true)
 
     try {
-      // Llamada directa al backend para administradores
-      const respuesta = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
+      if (auth?.iniciarSesion) {
+        // Método 1: Por contexto oficial de la aplicación
+        await auth.iniciarSesion(email, password)
+        navigate('/admin')
+      } else {
+        // Método 2: Petición directa al endpoint del staff
+        const respuesta = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        })
 
-      const datos = await respuesta.json()
+        const datos = await respuesta.json()
 
-      if (!respuesta.ok) {
-        throw new Error(datos.error || 'Credenciales inválidas')
+        if (!respuesta.ok) {
+          throw new Error(datos.error || 'Credenciales inválidas')
+        }
+
+        // Guardar token oficial de Staff (ds_token)
+        localStorage.setItem('ds_token', datos.token)
+
+        // Redirección total y limpia a /admin sin carreras de recarga
+        window.location.href = '/admin'
       }
-
-      // Guardar el token específico del STAFF
-      localStorage.setItem('ds_token', datos.token)
-      
-      // Redirigir al panel de Kelly
-      navigate('/admin')
-      
-      // Forzar recarga si usas AuthContext para que detecte el token
-      window.location.reload() 
-      
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión')
     } finally {
@@ -46,8 +51,6 @@ export default function Login() {
 
   return (
     <div className="flex min-h-[calc(100vh-140px)] w-full items-center justify-center bg-crema-dulce/30 px-6 py-12">
-      
-      {/* Contenedor centralizado y limpio */}
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl sm:p-12">
         <div className="text-center">
           <h1 className="font-serif text-2xl font-bold tracking-tight text-marron sm:text-3xl">
@@ -74,7 +77,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@dulcesecreto.co"
+              placeholder="kelly@dulcesecreto.co"
               className="mt-1.5 w-full rounded-xl border border-marron/20 bg-white px-4 py-3 text-sm text-marron focus:border-rosa-pastel focus:outline-none focus:ring-1 focus:ring-rosa-pastel"
             />
           </div>
@@ -102,7 +105,6 @@ export default function Login() {
           </button>
         </form>
       </div>
-
     </div>
   )
 }

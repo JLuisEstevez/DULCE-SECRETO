@@ -50,23 +50,14 @@ export default function RegistroCliente() {
       {/* ========================================================= */}
       <div className="relative hidden w-1/2 overflow-hidden bg-marron-oscuro lg:block">
         <img
-          src="/banner-login.jpg"
+          src="/banner_login.jpg"
           onError={(e) => {
             e.currentTarget.src = '/tortavainilla.jpg'
           }}
           alt="Comunidad Dulce Secreto"
           className="h-full w-full object-cover"
         />
-        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/30 to-transparent p-12 text-white">
-          <span className="text-xs font-semibold uppercase tracking-widest text-rosa-pastel">
-            Comunidad Dulce Secreto
-          </span>
-          <h2 className="mt-2 font-serif text-3xl font-bold leading-tight">
-            Crea tu cuenta y vive la experiencia
-          </h2>
-          <p className="mt-2 max-w-md text-sm text-crema-dulce/90">
-            Guarda tus recetas preferidas, haz seguimiento a tus pedidos y recibe una muestra exclusiva en compras superiores a $50.000 COP.
-          </p>
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t via-black/30 to-transparent p-12 text-white">  
         </div>
       </div>
 
