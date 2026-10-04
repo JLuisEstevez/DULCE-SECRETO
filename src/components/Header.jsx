@@ -37,7 +37,7 @@ function EnlaceCuenta({ alHacerClic }) {
       className="group relative flex items-center gap-2 py-1 text-sm text-marron/80 transition-colors hover:text-marron-oscuro after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-rosa-intenso after:transition-all after:duration-300 hover:after:w-full"
     >
       <img 
-        src="/perfil.png"
+        src="/Perfil.png"
         alt="Icono de perfil" 
         className="h-6 w-6 object-contain" 
       />
